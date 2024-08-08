@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import Modal from 'react-modal';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-Modal.setAppElement('#root'); 
+Modal.setAppElement('#root');
+
 const AttendanceSheet = () => {
   const [selectedJobType, setSelectedJobType] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -13,6 +14,9 @@ const AttendanceSheet = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [regularizationStatus, setRegularizationStatus] = useState({});
+  const [fileDetailsModalIsOpen, setFileDetailsModalIsOpen] = useState(false);
+  const [currentFileDetails, setCurrentFileDetails] = useState(null);
 
   const currentFiles = [
     {
@@ -37,7 +41,7 @@ const AttendanceSheet = () => {
     },
     {
       arrivalDate: '01-08-2023',
-      _id: '2',
+      _id: '3',
       username: 'Jack',
       email: 'jack@example.com',
       attendance: 'Absent',
@@ -58,8 +62,14 @@ const AttendanceSheet = () => {
     setDropdownOpen((prevState) => !prevState);
   };
 
-  const handleOpenModal = (url) => {
-    console.log('Open modal with URL:', url);
+  const handleOpenModal = (file) => {
+    setCurrentFileDetails(file);
+    setFileDetailsModalIsOpen(true);
+  };
+
+  const handleCloseFileDetailsModal = () => {
+    setFileDetailsModalIsOpen(false);
+    setCurrentFileDetails(null);
   };
 
   const handleSubmit = (event, fileId) => {
@@ -92,10 +102,20 @@ const AttendanceSheet = () => {
     setDropdownOpen(false);
   };
 
+  const handleAccept = (fileId) => {
+    setRegularizationStatus(prev => ({ ...prev, [fileId]: 'Accepted' }));
+    closeModal();
+  };
+
+  const handleReject = (fileId) => {
+    setRegularizationStatus(prev => ({ ...prev, [fileId]: 'Rejected' }));
+    closeModal();
+  };
+
   return (
     <div>
-        <form className="flex items-center mb-4 justify-center mx-auto font-sans" style={{ textAlign: 'center' }}>
-             <div className="relative w-full">
+      <form className="flex items-center mb-4 justify-center mx-auto font-sans" style={{ textAlign: 'center' }}>
+        <div className="relative w-full">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"></div>
         </div>
       </form>
@@ -137,7 +157,7 @@ const AttendanceSheet = () => {
         </button>
 
         {dropdownOpen && (
-            <div className="absolute z-10 w-48 p-3 bg-white rounded-3xl shadow transition duration-300 ease-in-out transform hover:scale-105 font-light text-sm">
+          <div className="absolute z-10 w-48 p-3 bg-white rounded-3xl shadow transition duration-300 ease-in-out transform hover:scale-105 font-light text-sm">
             <ul>
               {Date_Range.map((dateRange, index) => (
                 <li key={index}>
@@ -201,7 +221,7 @@ const AttendanceSheet = () => {
         <div className="w-full">
           <div className="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 text-center">
                 <tr>
                   <th scope="col" className="px-4 py-3">Date</th>
                   <th scope="col" className="px-4 py-3">Name</th>
@@ -213,7 +233,7 @@ const AttendanceSheet = () => {
                   <th scope="col" className="px-4 py-3">Download</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-center">
                 {currentFiles.map((file) => (
                   <tr key={file._id} className="border-b dark:border-gray-700">
                     <td className={`px-4 py-3 ${file.attendance === 'Absent' ? 'text-red-500' : 'text-black-900'}`}>
@@ -222,7 +242,7 @@ const AttendanceSheet = () => {
                     <th
                       scope="row"
                       className={`px-4 py-3 font-medium whitespace-nowrap dark:text-white ${
-                        file.attendance === 'present' ? 'text-green-500' : 'text-black-900'
+                        file.attendance === 'Present' ? 'text-green-500' : 'text-black-900'
                       }`}
                     >
                       {file.username}
@@ -235,7 +255,9 @@ const AttendanceSheet = () => {
                       {file.attendance === 'Absent' && (
                         <button
                           onClick={() => openModal(file._id)}
-                          className="text-white bg-blue-500 hover:bg-blue-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                          className={`text-white font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300 ${
+                            regularizationStatus[file._id] === 'Accepted' ? 'bg-green-500 hover:bg-green-600' : regularizationStatus[file._id] === 'Rejected' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                          }`}
                         >
                           Regularize
                         </button>
@@ -243,7 +265,7 @@ const AttendanceSheet = () => {
                     </td>
                     <td className="px-4 py-3 flex items-center justify-end">
                       <button
-                        onClick={() => handleOpenModal(`${BASE_URL}/api/download/${file.pdf}`)}
+                        onClick={() => handleOpenModal(file)}
                         className="text-blue-700 hover:text-white border border-indigo-500 hover:bg-indigo-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800"
                       >
                         Download & View
@@ -264,32 +286,85 @@ const AttendanceSheet = () => {
         className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
-        <div className="bg-white rounded-lg p-6">
+        <div className="bg-white rounded-2xl p-6">
           <h2 className="text-lg font-medium mb-4">Late Coming or Early Going Reason..</h2>
           <form onSubmit={(event) => handleSubmit(event, currentFileId)}>
-            <textarea
-              id={`regularization-reason-${currentFileId}`}
-              value={regularizationReason[currentFileId] || ''}
-              onChange={(e) => handleRegularizationReasonChange(currentFileId, e.target.value)}
-              rows="4"
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Reason.."
-              required
-            ></textarea>
+            <p>Reason..</p>
             <button
-              type="submit"
-              className="mt-2 text-white bg-green-500 hover:bg-blue-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300"
+              type="button"
+              onClick={() => handleAccept(currentFileId)}
+              className="mt-2 text-white bg-green-500 hover:bg-green-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300"
             >
               Accept
             </button>
             <button
-              onClick={closeModal}
-              className="mt-2 text-white bg-red-500 hover:bg-blue-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300 ml-2"
+              type="button"
+              onClick={() => handleReject(currentFileId)}
+              className="mt-2 text-white bg-red-500 hover:bg-red-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300 ml-2"
             >
               Reject
             </button>
           </form>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={fileDetailsModalIsOpen}
+        onRequestClose={handleCloseFileDetailsModal}
+        contentLabel="File Details Modal"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+      >
+        <div className="bg-white rounded-2xl p-6 w-1/2">
+  {currentFileDetails && (
+    <>
+      <h2 className="text-lg font-medium mb-4">Attendance Details</h2>
+      <table className="w-full text-left">
+        <tbody>
+          <tr>
+            <td className="font-bold py-2">Name:</td>
+            <td className="py-2">{currentFileDetails.username}</td>
+          </tr>
+          <tr>
+            <td className="font-bold py-2">Email:</td>
+            <td className="py-2">{currentFileDetails.email}</td>
+          </tr>
+          <tr>
+            <td className="font-bold py-2">Date:</td>
+            <td className="py-2">{currentFileDetails.arrivalDate}</td>
+          </tr>
+          <tr>
+            <td className="font-bold py-2">Attendance:</td>
+            <td className="py-2">{currentFileDetails.attendance}</td>
+          </tr>
+          <tr>
+            <td className="font-bold py-2">Arrival Time:</td>
+            <td className="py-2">{currentFileDetails.arrivalTime}</td>
+          </tr>
+          <tr>
+            <td className="font-bold py-2">Departure Time:</td>
+            <td className="py-2">{currentFileDetails.departureTime}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={() => window.open(`${BASE_URL}/api/download/${currentFileDetails.pdf}`, '_blank')}
+          className="text-white bg-blue-500 hover:bg-blue-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-blue-300 mr-2"
+        >
+          Download
+        </button>
+        <button
+          onClick={handleCloseFileDetailsModal}
+          className="text-white bg-gray-500 hover:bg-gray-600 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4 focus:ring-gray-300"
+        >
+          Close
+        </button>
+      </div>
+    </>
+  )}
+</div>
+
       </Modal>
     </div>
   );
